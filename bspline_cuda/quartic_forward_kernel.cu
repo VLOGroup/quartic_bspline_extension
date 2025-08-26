@@ -1,0 +1,96 @@
+#include <vector>
+
+#include <torch/extension.h>
+
+#include "include/constants.cuh"
+#include "include/debug_utils.cuh"
+
+template <typename T>
+__global__ void quartic_bspline_forward_kernel(
+    const torch::PackedTensorAccessor32<T, 2> x,
+    const torch::PackedTensorAccessor32<T, 2> weight_tensor,
+    const torch::PackedTensorAccessor32<T, 1> centers,
+    const T scale,
+    torch::PackedTensorAccessor32<T, 2> rho,
+    torch::PackedTensorAccessor32<T, 2> rho_prime
+){
+    const int idx_f = blockIdx.y * blockDim.y + threadIdx.y;
+    const int idx_x = blockIdx.x * blockDim.x + threadIdx.x;
+
+    const int num_rows = x.size(0);
+    const int num_cols = x.size(1);
+
+    const int num_centers = centers.size(0);
+
+    if (idx_f < num_rows && idx_x < num_cols){
+        const T xx = x[idx_f][idx_x];
+        T rho_val = 0.0f;
+        T rho_prime_val = 0.0f;
+
+        for (auto j = 0; j < num_centers; j++){
+            const T x_scaled = (xx - centers[j]) / scale;
+            if (fabsf(x_scaled) < supp_rad){
+                // determine support interval
+                int interval = (int)(x_scaled - supp_lower);
+                interval = max(0, min(num_supp_intervals - 1, interval));
+                
+                // evaluate local spline and its derivative
+                T spline_val = quartic_bspline_coeffs[interval][4];
+                T spline_deriv = 0.0f;
+                
+                #pragma unroll
+                for (auto i = 1; i <= num_supp_intervals - 1; i++){
+                    spline_deriv = spline_deriv * x_scaled + spline_val;
+                    spline_val = spline_val * x_scaled + quartic_bspline_coeffs[interval][num_supp_intervals - 1 - i];
+                }
+
+                rho_val += weight_tensor[idx_f][j] * spline_val;
+                rho_prime_val += weight_tensor[idx_f][j] * spline_deriv;
+            }
+        }
+
+        rho[idx_f][idx_x] = rho_val;
+        rho_prime[idx_f][idx_x] = rho_prime_val;
+
+    }
+}
+
+std::vector<torch::Tensor> quartic_bspline_forward_function(
+    torch::Tensor x,
+    torch::Tensor weight_tensor,
+    torch::Tensor centers,
+    float scale
+){
+    unsigned int bs = x.size(0);
+    unsigned int f = x.size(1);
+    unsigned int w = x.size(2);
+    unsigned int h = x.size(3);
+    auto x_ = torch::permute(x, {1, 0, 2, 3}).contiguous().reshape({f, bs * w * h});
+
+    const dim3 block_size(1024, 1, 1);
+    const dim3 num_blocks((x_.size(1) + block_size.x - 1) / block_size.x, 
+                          (x_.size(0) + block_size.y - 1) / block_size.y);
+
+    auto scalar_type = x.scalar_type();
+
+    auto rho = torch::empty_like(x_);
+    auto rho_prime = torch::empty_like(x_);
+
+    AT_DISPATCH_FLOATING_TYPES(scalar_type, "quartic_bspline_forward", [&] {
+        quartic_bspline_forward_kernel<scalar_t><<<num_blocks, block_size>>>(
+            x_.packed_accessor32<scalar_t, 2>(),
+            weight_tensor.packed_accessor32<scalar_t, 2>(), 
+            centers.packed_accessor32<scalar_t, 1>(),
+            static_cast<scalar_t>(scale),
+            rho.packed_accessor32<scalar_t, 2>(),
+            rho_prime.packed_accessor32<scalar_t, 2>()
+        );
+    });
+
+    CUDA_DEBUG_FUNC(cudaGetLastError());
+
+    return {
+        rho.reshape({f, bs, w, h}).permute({1, 0, 2, 3}).contiguous(), 
+        rho_prime.reshape({f, bs, w, h}).permute({1, 0, 2, 3}).contiguous()
+    };
+}

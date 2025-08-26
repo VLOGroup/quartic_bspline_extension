@@ -6,7 +6,9 @@ setup(
     ext_modules=[
         CUDAExtension(
             name='quartic_bspline_cuda_extension', 
-            sources=['bspline_cuda/bindings.cpp', 'bspline_cuda/kernel.cu'])
+            sources=['bspline_cuda/bindings.cpp', 
+                     'bspline_cuda/quartic_forward_kernel.cu', 
+                     'bspline_cuda/quartic_backward_kernel.cu'])
     ],
     cmdclass={'build_ext': BuildExtension}
 )

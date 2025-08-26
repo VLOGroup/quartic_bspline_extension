@@ -54,10 +54,10 @@ class QuarticBSplinePotential(torch.nn.Module):
         num_centers = 33
 
         centers = torch.linspace(box_lower, box_upper, num_centers)
-        self.register_buffer('centers', centers.view(1, 1, -1, 1, 1))
+        self.register_buffer('centers', centers)
         self.weights = torch.nn.Parameter(torch.log(1 + centers ** 2), requires_grad=True)
 
-        self.scale = (box_upper - box_lower) / (num_centers - 1)
+        self.scale = 1 # (box_upper - box_lower) / (num_centers - 1)
 
     @classmethod
     def _bucketise(cls, x):
@@ -66,7 +66,7 @@ class QuarticBSplinePotential(torch.nn.Module):
 
     def forward(self, x: torch.Tensor, reduce: bool=True) -> torch.Tensor:
         x_scaled = x.unsqueeze(dim=2)
-        x_scaled = (x_scaled - self.centers) / self.scale
+        x_scaled = (x_scaled - self.centers.view(1, 1, -1, 1, 1)) / self.scale
         index_tensor = self._bucketise(x_scaled)
 
         coeffs = self.coeffs[index_tensor]
