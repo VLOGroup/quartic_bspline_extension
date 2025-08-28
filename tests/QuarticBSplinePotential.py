@@ -8,30 +8,6 @@ def forward_func(x_scaled, coeffs, weights):
                                      x_scaled * (coeffs[..., 3] + x_scaled * coeffs[..., 4]))))
     return y * weights.view(1, 1, -1, 1, 1)
 
-def backward_func(x_scaled, b, c, d, e, weights):
-    y = (b + x_scaled * (2 * c + x_scaled * (3 * d + x_scaled * 4 * e)))
-    return y * weights.view(1, 1, -1, 1, 1)
-
-class QuarticBSplineFunction(torch.autograd.Function):
-
-    @staticmethod
-    def forward(x_scaled, scale, coeffs, weights) -> Any:
-        return forward_func(x_scaled, coeffs, weights), coeffs[..., 1], coeffs[..., 2], coeffs[..., 3], coeffs[..., 4]
-
-    @staticmethod
-    def setup_context(ctx: torch.autograd.function.FunctionCtx, inputs: Tuple, outputs: Tuple):
-        x_scaled, scale, _, weights = inputs
-        _, b, c, d, e = outputs
-        ctx.save_for_backward(x_scaled, weights, b, c, d, e)
-        ctx.scale = scale
-
-    @staticmethod
-    def backward(ctx: torch.autograd.function.FunctionCtx, *grad_outputs: Any) -> Any:
-        x_scaled, weights, b, c, d, e = ctx.saved_tensors
-        scale = ctx.scale
-        y = backward_func(x_scaled, b, c, d, e, weights / scale)
-        return grad_outputs[0] * y, *[None] * 3
-
 class QuarticBSplinePotential(torch.nn.Module):
 
     SUPP_LOWER = -2.5
@@ -53,11 +29,13 @@ class QuarticBSplinePotential(torch.nn.Module):
         box_upper = 3
         num_centers = 33
 
+        # centers = torch.tensor([-6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0])
         centers = torch.linspace(box_lower, box_upper, num_centers)
-        self.register_buffer('centers', centers)
-        self.weights = torch.nn.Parameter(torch.log(1 + centers ** 2), requires_grad=True)
 
-        self.scale = 1 # (box_upper - box_lower) / (num_centers - 1)
+        self.register_buffer('centers', centers)
+        self.weights = torch.nn.Parameter(torch.ones_like(centers), requires_grad=True) # torch.nn.Parameter(torch.log(1 + centers ** 2), requires_grad=True)
+
+        self.scale = (box_upper - box_lower) / (num_centers - 1)
 
     @classmethod
     def _bucketise(cls, x):
@@ -70,6 +48,7 @@ class QuarticBSplinePotential(torch.nn.Module):
         index_tensor = self._bucketise(x_scaled)
 
         coeffs = self.coeffs[index_tensor]
-        y, *_ = QuarticBSplineFunction.apply(x_scaled, self.scale, coeffs, self.weights)
+
+        y = forward_func(x_scaled, coeffs, self.weights)
 
         return torch.sum(y) if reduce else torch.sum(y, dim=(2))

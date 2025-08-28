@@ -8,6 +8,13 @@ venv/
 # Checkpoints of Jupyter notebooks
 .ipynb_checkpoints/
 
+# IDE
+.idea/
+.vscode/
+
+# Testing
+.pytest_cache/
+
 # Packaging
 build/
 dist/
@@ -15,3 +22,5 @@ dist/
 
 # Log files
 *.log
+
+# CUDA 

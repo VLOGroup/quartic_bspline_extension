@@ -26,18 +26,19 @@ __global__ void quartic_bspline_forward_kernel(
         const T xx = x[idx_f][idx_x];
         T rho_val = 0.0f;
         T rho_prime_val = 0.0f;
+        T scale_inv = 1.0f / scale;
 
         for (auto j = 0; j < num_centers; j++){
-            const T x_scaled = (xx - centers[j]) / scale;
+            const T x_scaled = (xx - centers[j]) * scale_inv;
             if (fabsf(x_scaled) < supp_rad){
                 // determine support interval
                 int interval = (int)(x_scaled - supp_lower);
                 interval = max(0, min(num_supp_intervals - 1, interval));
-                
+
                 // evaluate local spline and its derivative
                 T spline_val = quartic_bspline_coeffs[interval][4];
                 T spline_deriv = 0.0f;
-                
+
                 #pragma unroll
                 for (auto i = 1; i <= num_supp_intervals - 1; i++){
                     spline_deriv = spline_deriv * x_scaled + spline_val;
@@ -45,21 +46,20 @@ __global__ void quartic_bspline_forward_kernel(
                 }
 
                 rho_val += weight_tensor[idx_f][j] * spline_val;
-                rho_prime_val += weight_tensor[idx_f][j] * spline_deriv;
+                rho_prime_val += weight_tensor[idx_f][j] * spline_deriv * scale_inv;
             }
         }
 
         rho[idx_f][idx_x] = rho_val;
         rho_prime[idx_f][idx_x] = rho_prime_val;
-
     }
 }
 
 std::vector<torch::Tensor> quartic_bspline_forward_function(
-    torch::Tensor x,
-    torch::Tensor weight_tensor,
-    torch::Tensor centers,
-    float scale
+    const torch::Tensor x,
+    const torch::Tensor weight_tensor,
+    const torch::Tensor centers,
+    const float scale
 ){
     unsigned int bs = x.size(0);
     unsigned int f = x.size(1);

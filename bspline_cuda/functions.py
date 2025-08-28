@@ -1,7 +1,7 @@
 import torch
 from typing import Tuple, Any
 
-from bspline_cuda import quartic_bspline_forward
+from bspline_cuda import quartic_bspline_forward, quartic_bspline_backward
 
 class QuarticBSplineFunction(torch.autograd.Function):
 
@@ -12,14 +12,19 @@ class QuarticBSplineFunction(torch.autograd.Function):
 
     @staticmethod
     def setup_context(ctx: torch.autograd.function.FunctionCtx, inputs: Tuple, outputs: Tuple):
-        x, weights, *_ = inputs
-        y, y_prime = outputs
+        x, weights, centers, scale = inputs
+        _, y_prime = outputs
 
-        ctx.save_for_backward(x, weights, y, y_prime)
+        ctx.save_for_backward(x, weights, centers, y_prime)
+        ctx.scale = scale
 
     @staticmethod
-    def backward(ctx: torch.autograd.function.FunctionCtx, *grad_outputs: Any):
+    def backward(ctx: torch.autograd.function.FunctionCtx, *grad_outputs: torch.Tensor):
 
-        x, weights, y, y_prime = ctx.saved_tensors
+        x, weights, centers, y_prime = ctx.saved_tensors
+        scale = ctx.scale
 
-        return None
+        grad_w = quartic_bspline_backward(x, weights, centers, scale, grad_outputs[0])[0]
+
+        return y_prime * grad_outputs[0], grad_w, None, None
+    
