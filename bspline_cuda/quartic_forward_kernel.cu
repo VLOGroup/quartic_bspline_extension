@@ -65,7 +65,7 @@ std::vector<torch::Tensor> quartic_bspline_forward_function(
     unsigned int f = x.size(1);
     unsigned int w = x.size(2);
     unsigned int h = x.size(3);
-    auto x_ = torch::permute(x, {1, 0, 2, 3}).contiguous().reshape({f, bs * w * h});
+    auto x_ = torch::permute(x, {1, 0, 2, 3}).reshape({f, bs * w * h});
 
     const dim3 block_size(1024, 1, 1);
     const dim3 num_blocks((x_.size(1) + block_size.x - 1) / block_size.x, 
@@ -90,7 +90,7 @@ std::vector<torch::Tensor> quartic_bspline_forward_function(
     CUDA_DEBUG_FUNC(cudaGetLastError());
 
     return {
-        rho.reshape({f, bs, w, h}).permute({1, 0, 2, 3}).contiguous(), 
-        rho_prime.reshape({f, bs, w, h}).permute({1, 0, 2, 3}).contiguous()
+        rho.reshape({f, bs, w, h}).permute({1, 0, 2, 3}), 
+        rho_prime.reshape({f, bs, w, h}).permute({1, 0, 2, 3})
     };
 }

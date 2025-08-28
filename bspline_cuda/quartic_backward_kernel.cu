@@ -58,8 +58,8 @@ std::vector<torch::Tensor> quartic_bspline_backward_function(
     unsigned int f = x.size(1);
     unsigned int w = x.size(2);
     unsigned int h = x.size(3);
-    auto x_ = torch::permute(x, {1, 0, 2, 3}).contiguous().reshape({f, bs * w * h});
-    auto grad_out_ = torch::permute(grad_out, {1, 0, 2, 3}).contiguous().reshape({f, bs * w * h});
+    auto x_ = torch::permute(x, {1, 0, 2, 3}).reshape({f, bs * w * h});
+    auto grad_out_ = torch::permute(grad_out, {1, 0, 2, 3}).reshape({f, bs * w * h});
 
     const dim3 block_size(1024, 1, 1);
     const dim3 num_blocks((x_.size(1) + block_size.x - 1) / block_size.x, 
@@ -86,5 +86,5 @@ std::vector<torch::Tensor> quartic_bspline_backward_function(
 
     CUDA_DEBUG_FUNC(cudaGetLastError());
 
-    return {grad_w.contiguous()};
+    return {grad_w};
 }

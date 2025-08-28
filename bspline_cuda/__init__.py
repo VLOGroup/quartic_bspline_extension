@@ -1,3 +1,5 @@
+__version__ = '0.1.0'
+
 from torch.utils.cpp_extension import load
 import os
 
