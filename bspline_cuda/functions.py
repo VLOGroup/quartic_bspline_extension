@@ -4,6 +4,11 @@ from typing import Tuple, Any
 from bspline_cuda import quartic_bspline_forward, quartic_bspline_backward
 
 class QuarticBSplineFunction(torch.autograd.Function):
+    """
+    Class implementing custom autograd function based on the CUDA kernels
+        * quartic_bspline_forward_function()
+        * quartic_bspline_backward_function()
+    """
 
     @staticmethod
     def forward(x: torch.Tensor, weights: torch.Tensor, centers: torch.Tensor, scale: float) -> Tuple[torch.Tensor, ...]:
@@ -24,7 +29,8 @@ class QuarticBSplineFunction(torch.autograd.Function):
         x, weights, centers, y_prime = ctx.saved_tensors
         scale = ctx.scale
 
+        grad_x = y_prime * grad_outputs[0]
         grad_w = quartic_bspline_backward(x, weights, centers, scale, grad_outputs[0])[0]
 
-        return y_prime * grad_outputs[0], grad_w, None, None
+        return grad_x, grad_w, None, None
     

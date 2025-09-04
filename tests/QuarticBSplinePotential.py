@@ -28,12 +28,10 @@ class QuarticBSplinePotential(torch.nn.Module):
         box_lower = -3
         box_upper = 3
         num_centers = 33
-
-        # centers = torch.tensor([-6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0])
         centers = torch.linspace(box_lower, box_upper, num_centers)
-
         self.register_buffer('centers', centers)
-        self.weights = torch.nn.Parameter(torch.ones_like(centers), requires_grad=True) # torch.nn.Parameter(torch.log(1 + centers ** 2), requires_grad=True)
+        
+        self.weights = torch.nn.Parameter(torch.log(1 + centers ** 2), requires_grad=True)
 
         self.scale = (box_upper - box_lower) / (num_centers - 1)
 
