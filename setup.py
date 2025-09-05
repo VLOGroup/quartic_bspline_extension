@@ -1,7 +1,7 @@
 from setuptools import setup
 from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
-name = 'quartic_bspline_cuda_extension'
+name = 'bspline_cuda_extension'
 module = CUDAExtension(name=name, 
                        sources=['bspline_cuda/bindings.cpp', 
                                 'bspline_cuda/quartic_forward_kernel.cu', 

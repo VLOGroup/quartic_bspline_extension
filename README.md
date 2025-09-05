@@ -31,9 +31,36 @@ b-spline (see [[1]](#1)).
     * For a weight tensor of shape [f, N], the potential w.r.t. to the weights
         [$\nu$, :] is applied to $f$-th channel of the input tensor.
 
+## Build
+
+For both building processes a (virtual) Python environment is required.
+
+
+### CUDA extension
+
+Within the Python environment install the packages `torch` and `setuptools`. Then, 
+to build/compile the CUDA extension, from the top directory of this repository execute
+
+        python setup.py install
+
+Alternatively call `make install`. 
+
+### Python wheel
+
+Activate the Python environment and install the packages `setuptools`, `build` and
+`wheel`. Then from the top directory of this repository run
+
+        python -m build --wheel --outdir artefacts
+
+Alternatively call `make build`.
+
+The generate Python wheel is stored in subdirectory `artefacts`.
+
 ## Installation
 
+To install the package as a Python wheel simply run 
 
+        pip install bspline_cuda_extension-0.2.0-cp311-cp311-linux_x86_64.whl
 
 ## Usage
 

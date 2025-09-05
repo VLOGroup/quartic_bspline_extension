@@ -1,0 +1,15 @@
+# Extension specific
+torch==2.6.0
+
+# Tests only
+pytest==8.4.1
+
+# Examples only
+matplotlib==3.10.5
+PyQt5==5.15.11
+
+# Build process
+setuptools==65.5.0
+build==1.3.0
+wheel==0.45.1
+ninja==1.13.0
