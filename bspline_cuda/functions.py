@@ -1,7 +1,7 @@
 import torch
 from typing import Tuple
 
-from bspline_cuda import quartic_bspline_forward, quartic_bspline_backward
+from . import quartic_bspline_forward, quartic_bspline_backward
 
 class QuarticBSplineFunction(torch.autograd.Function):
     """
