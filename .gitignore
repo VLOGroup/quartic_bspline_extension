@@ -19,9 +19,13 @@ venv/
 build/
 dist/
 *.egg-info/
+artefacts/
 
 # Log files
 *.log
 
 # CUDA 
 *.o
+
+# Dummy files
+trash/

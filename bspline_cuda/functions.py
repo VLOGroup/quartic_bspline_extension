@@ -1,5 +1,5 @@
 import torch
-from typing import Tuple
+from typing import Tuple, Optional, Any
 
 from . import quartic_bspline_forward, quartic_bspline_backward
 
@@ -34,3 +34,22 @@ class QuarticBSplineFunction(torch.autograd.Function):
 
         return grad_x, grad_w, None, None
     
+    @staticmethod
+    def vmap(
+        info: Any, 
+        in_dims: Tuple[Optional[int]], 
+        x: torch.Tensor, 
+        weights: torch.Tensor, 
+        centers: torch.Tensor, 
+        scale: float
+    ) -> Tuple:
+        # NOTE
+        #   > Since forward function handles already batch-wise tensor evaluation, 
+        #       one needs only to make sure that forward call is applied to 
+        #       contiguous tensors.
+        #   > vmap needs to handle only forward call - backward call does not
+        #       need to be considered.
+        #   > For signature of input/output of this function see
+        #       https://docs.pytorch.org/docs/main/notes/extending.func.html
+
+        return QuarticBSplineFunction.apply(x.contiguous(), weights, centers, scale), (0, 0)

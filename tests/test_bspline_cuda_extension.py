@@ -123,6 +123,69 @@ def test_tensors_of_different_datatype():
     finally:
         assert expected_err_msg == err_msg
 
+def test_vmap_forward():
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    dtype = torch.float64
 
+    bs = 10
+    f = 4
+    w = 128
+    h = 64
+    num_centers = 33
+
+    x = 5 * (2 * torch.rand(bs, f, w, h, device=device, dtype=dtype) - 1)
+    x.requires_grad_(True)
+
+    weight_tensor = torch.rand(f, num_centers, device=device, dtype=dtype)
+    box_lower = -3
+    box_upper = 3
+    centers = torch.linspace(box_lower, box_upper, num_centers, 
+                             device=device, dtype=dtype)
+    scale = (box_upper - box_lower) / (num_centers - 1)
+
+    def per_sample_func(x_: torch.Tensor) -> torch.Tensor:
+        y, _ = QuarticBSplineFunction.apply(x_, weight_tensor, centers, scale)
+        return y
+
+    def func(*x_: torch.Tensor) -> torch.Tensor:
+        return torch.vmap(per_sample_func)(torch.cat(x_, dim=0))   
+
+    assert torch.allclose(func(*[x]), QuarticBSplineFunction.apply(x, weight_tensor, centers, scale)[0])
+
+def test_vmap_backward():
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    dtype = torch.float64
+
+    bs = 10
+    f = 4
+    w = 128
+    h = 64
+    num_centers = 33
+
+    x = 5 * (2 * torch.rand(bs, f, w, h, device=device, dtype=dtype) - 1)
+    x.requires_grad_(True)
+
+    weight_tensor = torch.rand(f, num_centers, device=device, dtype=dtype)
+    box_lower = -3
+    box_upper = 3
+    centers = torch.linspace(box_lower, box_upper, num_centers, 
+                             device=device, dtype=dtype)
+    scale = (box_upper - box_lower) / (num_centers - 1)
+
+    def per_sample_func(x_: torch.Tensor) -> torch.Tensor:
+        y, _ = QuarticBSplineFunction.apply(x_, weight_tensor, centers, scale)
+        return y
+
+    def func(*x_: torch.Tensor) -> torch.Tensor:
+        return torch.vmap(per_sample_func)(torch.cat(x_, dim=0))   
+
+    y_true, _ = QuarticBSplineFunction.apply(x, weight_tensor, centers, scale)
+    dy_dx_true = torch.autograd.grad(inputs=x, outputs=torch.sum(y_true))[0]
+
+    with torch.enable_grad():
+        y_test = torch.sum(func(*[x]))
+    dy_dx_test = torch.autograd.grad(inputs=x, outputs=y_test)[0]
+
+    assert torch.allclose(dy_dx_true, dy_dx_test)
 
 
