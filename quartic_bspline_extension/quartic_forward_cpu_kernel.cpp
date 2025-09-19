@@ -10,15 +10,15 @@ void quartic_bspline_forward_cpu_kernel(
     const T scale,
     const T scale_inv,
     const T delta_inv,
-    const size_t num_features;
-    const size_t width;
-    const size_t height;
+    const size_t num_features,
+    const size_t width,
+    const size_t height,
     torch::Tensor rho,
     torch::Tensor rho_prime
 ){
-    x_ptr = x.data_ptr<T>();
-    rho_ptr = rho.data_ptr<T>();
-    rho_prime_ptr = rho_prime.data_ptr<T>();
+    T* x_ptr = x.data_ptr<T>();
+    T* rho_ptr = rho.data_ptr<T>();
+    T* rho_prime_ptr = rho_prime.data_ptr<T>();
 
     #pragma omp parallel for
     for (size_t i = 0; i < x.numel(); i ++){
@@ -29,11 +29,11 @@ void quartic_bspline_forward_cpu_kernel(
         const std::pair<size_t, size_t> center_idx_bounds = ...;
 
         for (size_t j = center_idx_bounds.first; j <= center_idx_bounds.second; j++){
-            const T scaled = (x - centers[j]) * scale_inv;
+            const T x_scaled = (x_ - centers[j]) * scale_inv;
 
             if (fabsf(x_scaled) < supp_rad){
                 int interval = (int)(x_scaled - supp_lower);
-                interval = max(0, min(num_supp_intervals - 1, interval));
+                interval = std::max(0, std::min(num_supp_intervals - 1, interval));
 
                 // evaluate local spline and its derivative
                 T spline_val = quartic_bspline_coeffs[interval][4];
@@ -46,7 +46,7 @@ void quartic_bspline_forward_cpu_kernel(
                                + quartic_bspline_coeffs[interval][num_supp_intervals - 1 - k];
                 }
 
-                idx_f = (i / (width * height)) % num_features;
+                size_t idx_f = (i / (width * height)) % num_features;
                 rho_val += weight_tensor[idx_f][j] * spline_val;
                 rho_prime_val += weight_tensor[idx_f][j] * spline_deriv * scale_inv;                
             }
