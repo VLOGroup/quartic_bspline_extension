@@ -12,6 +12,11 @@ venv/
 .idea/
 .vscode/
 
+# Docs
+docs/build/
+latex
+
+
 # Testing
 .pytest_cache/
 

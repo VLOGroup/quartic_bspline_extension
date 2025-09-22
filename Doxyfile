@@ -11,7 +11,7 @@ FILE_PATTERNS = *.h *.hpp *.cpp *.cuh *.cu
 EXTENSION_MAPPING = cu=C++ cuh=C++
 
 GENERATE_XML = YES
-XML_OUTPUT = docs/source/xml
+XML_OUTPUT = docs/build/xml
 
 EXTRACT_ALL = NO
 
