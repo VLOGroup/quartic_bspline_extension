@@ -1,10 +1,10 @@
 #include <vector>
 #include <torch/extension.h>
 
-#include "include/constants.cuh"
+#include "include/constants.h"
 #include "include/debug_utils.cuh"
-#include "include/index_utils.cuh"
-#include "include/device_utils.cuh"
+#include "include/index_utils.h"
+#include "include/device_utils.h"
 
 /**
  * @brief CUDA kernel which performs evaluation of quartic (midpoint cardinal) b-spline potential function 
@@ -37,13 +37,13 @@ __global__ void quartic_bspline_forward_cuda_kernel(
     torch::PackedTensorAccessor32<T, 4> rho,
     torch::PackedTensorAccessor32<T, 4> rho_prime
 ){
-    const int idx_h = blockIdx.x * blockDim.x + threadIdx.x;
-    const int idx_w = blockIdx.y * blockDim.y + threadIdx.y;
-    const int idx_bf = blockIdx.z;
+    const int64_t idx_h = blockIdx.x * blockDim.x + threadIdx.x;
+    const int64_t idx_w = blockIdx.y * blockDim.y + threadIdx.y;
+    const int64_t idx_bf = blockIdx.z;
 
-    const size_t num_features = x.size(1);
-    const int idx_bs = idx_bf / num_features;
-    const int idx_f = idx_bf % num_features;
+    const int64_t num_features = x.size(1);
+    const int64_t idx_bs = idx_bf / num_features;
+    const int64_t idx_f = idx_bf % num_features;
 
     if (idx_bs < x.size(0) && idx_f < num_features && idx_w < x.size(2) && idx_h < x.size(3)){
         T rho_val = 0.0f;
@@ -51,29 +51,32 @@ __global__ void quartic_bspline_forward_cuda_kernel(
         const T x_ = x[idx_bs][idx_f][idx_w][idx_h];
 
         /**
-         * Compute center index range corresponding to the current value of x - note that the
-         * computation relies on the assumption of equally spaced center nodes!
+         * Compute center index range corresponding to the current value of x.
+         *
+         * NOTE
+         * ---- 
+         *     >  The computation relies on the assumption of equally spaced center nodes!
          */
-        const std::pair<size_t, size_t> center_idx_bounds = 
+        const std::pair<int, int> center_idx_bounds = 
                     compute_center_index_bounds(x_, centers[0], scale, delta_inv, centers.size(0));
 
-        for (size_t j = center_idx_bounds.first; j <= center_idx_bounds.second; j++){
+        for (int j = center_idx_bounds.first; j <= center_idx_bounds.second; j++){
             const T x_scaled = (x_ - centers[j]) * scale_inv;
 
-            if (fabsf(x_scaled) < supp_rad){
+            if (fabsf(x_scaled) < SUPP_RAD){
                 // determine support interval
-                int interval = (int)(x_scaled - supp_lower);
-                interval = max(0, min(num_supp_intervals - 1, interval));
+                int interval = static_cast<int>(x_scaled - SUPP_LOWER);
+                interval = max(0, min(NUM_SUPP_INTERVALS - 1, interval));
 
                 // evaluate local spline and its derivative
-                T spline_val = quartic_bspline_coeffs[interval][4];
+                T spline_val = QUARTIC_BSPLINE_COEFFS[interval][4];
                 T spline_deriv = 0.0f;
 
                 #pragma unroll
-                for (auto i = 1; i <= num_supp_intervals - 1; i++){
+                for (int i = 1; i <= NUM_SUPP_INTERVALS - 1; i++){
                     spline_deriv = spline_deriv * x_scaled + spline_val;
                     spline_val = spline_val * x_scaled 
-                               + quartic_bspline_coeffs[interval][num_supp_intervals - 1 - i];
+                               + QUARTIC_BSPLINE_COEFFS[interval][NUM_SUPP_INTERVALS - 1 - i];
                 }
 
                 rho_val += weight_tensor[idx_f][j] * spline_val;
@@ -106,8 +109,8 @@ std::vector<torch::Tensor> quartic_bspline_forward_cuda_function(
     const double scale_inv = 1.0 / scale;
     const double delta_inv = 1.0 / (centers[1].item<double>() - centers[0].item<double>());
 
-    AT_DISPATCH_FLOATING_TYPES(scalar_type, "quartic_bspline_forward", [&] {
-        quartic_bspline_forward_kernel<scalar_t><<<grid_size, block_size>>>(
+    AT_DISPATCH_FLOATING_TYPES(scalar_type, "quartic_bspline_forward_cuda", [&] {
+        quartic_bspline_forward_cuda_kernel<scalar_t><<<grid_size, block_size>>>(
             x.packed_accessor32<scalar_t, 4>(),
             weight_tensor.packed_accessor32<scalar_t, 2>(), 
             centers.packed_accessor32<scalar_t, 1>(),

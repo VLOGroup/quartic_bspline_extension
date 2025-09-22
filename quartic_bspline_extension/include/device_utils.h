@@ -4,8 +4,6 @@
 #include <torch/extension.h>
 
 inline void check_device_and_datatype(const std::vector<torch::Tensor>& tensors){
-    TORCH_CHECK(tensors[0].is_cuda(), "Tensors must be CUDA.")
-
     auto device_0 = tensors[0].device();
     auto type_0 = tensors[0].scalar_type();
 

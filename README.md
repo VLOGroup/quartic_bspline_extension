@@ -3,7 +3,9 @@
 This package implements quartic (midpoint cardinal) b-spline potential functions. By such 
 a potential function we mean a parameter-dependent function $\rho(\cdot, \gamma)$ with
 
-$$\rho(x, \gamma) = \sum_{\nu = 1}^{N}\gamma_{\nu}M_{4}(\frac{x - t_{\nu}}{s})$$,
+$$
+\rho(x, \gamma) = \sum_{\nu = 1}^{N}\gamma_{\nu}M_{4}(\frac{x - t_{\nu}}{s}),
+$$
 
 where $\{t_{\nu}\}_{\nu = 1}^{N}$ is an equidistant partition of the Interval $I = [a, b]$, 
 $s > 0$ is a scaling parameter and $M_{4}$ refers to the central quartic midpoint cardinal
@@ -23,7 +25,7 @@ b-spline (see [[1]](#1)).
 
 ## Features
 
-- CUDA kernels for forward and backward step
+- CUDA and CPU kernels for forward and backward step
 - Custom autograd functions based on these kernels to compute in particular
     the gradients of the potential w.r.t. to input and parameters.
 - Feature-wise implementation: 
@@ -34,7 +36,6 @@ b-spline (see [[1]](#1)).
 ## Build
 
 For both building processes a (virtual) Python environment is required.
-
 
 ### CUDA extension
 
@@ -66,7 +67,7 @@ To install the package as a Python wheel simply run
 
 ```python
 
-from bspline_cuda.functions import QuarticBSplineFunction
+from quartic_bspline_extension.functions import QuarticBSplineFunction
 
 box_lower = -3.0
 box_upper = 3.0

@@ -1,7 +1,7 @@
 import torch
 from matplotlib import pyplot as plt
 
-from bspline_cuda.functions import QuarticBSplineFunction
+from quartic_bspline_extension.functions import QuarticBSplineFunction
 
 def main():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')

@@ -1,4 +1,3 @@
-from typing import Any, Tuple
 import torch
 
 def forward_func(x_scaled, coeffs, weights):
@@ -14,7 +13,7 @@ class QuarticBSplinePotential(torch.nn.Module):
     SUPP_UPPER = 2.5
     NUM_NODES = 6
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         coeffs = torch.zeros(7, 5)
@@ -36,7 +35,7 @@ class QuarticBSplinePotential(torch.nn.Module):
         self.scale = (box_upper - box_lower) / (num_centers - 1)
 
     @classmethod
-    def _bucketise(cls, x):
+    def _bucketise(cls, x) -> torch.Tensor:
         x_scaled = (x - cls.SUPP_LOWER) / (cls.SUPP_UPPER - cls.SUPP_LOWER)
         return torch.clamp((x_scaled * (cls.NUM_NODES - 1)).ceil().long(), min=0, max=cls.NUM_NODES)
 

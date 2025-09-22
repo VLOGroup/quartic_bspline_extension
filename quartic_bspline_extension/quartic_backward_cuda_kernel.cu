@@ -1,10 +1,10 @@
 #include <vector>
 #include <torch/extension.h>
 
-#include "include/constants.cuh"
+#include "include/constants.h"
 #include "include/debug_utils.cuh"
-#include "include/index_utils.cuh"
-#include "include/device_utils.cuh"
+#include "include/index_utils.h"
+#include "include/device_utils.h"
 
 /**
  * @brief CUDA kernel implementing the backward step of quartic (midpoint cardinal) 
@@ -15,7 +15,7 @@
  *  > The derivative w.r.t. the state is computed within the kernel for the 
  *    forward step. Aggregation is managed within custom autograd function on 
  *    PyTorch side.
- *  > Optimisation in terms of speed:
+ *  > Possible optimisations in terms of speed:
  *      * Introduce shared memory on CUDA thread block
  *      * Compute partial gradients on thread block and store results into 
  *        shared memory first.
@@ -46,38 +46,37 @@ __global__ void quartic_bspline_backward_cuda_kernel(
     const torch::PackedTensorAccessor32<T, 4> grad_out,
     torch::PackedTensorAccessor32<T, 2> grad_w
 ){
-    const int num_centers = centers.size(0);
-    const int num_features = x.size(1);
+    const int64_t num_centers = centers.size(0);
+    const int64_t num_features = x.size(1);
 
-    const int idx_h = blockIdx.x * blockDim.x + threadIdx.x;
-    const int idx_w = blockIdx.y * blockDim.y + threadIdx.y;
-    const int idx_bf = blockIdx.z;
+    const int64_t idx_h = blockIdx.x * blockDim.x + threadIdx.x;
+    const int64_t idx_w = blockIdx.y * blockDim.y + threadIdx.y;
+    const int64_t idx_bf = blockIdx.z;
 
-    const int idx_bs = idx_bf / num_features;
-    const int idx_f = idx_bf % num_features;
+    const int64_t idx_bs = idx_bf / num_features;
+    const int64_t idx_f = idx_bf % num_features;
 
     if (idx_bs < x.size(0) && idx_f < num_features && idx_w < x.size(2) && idx_h < x.size(3)){
 
         const T x_ = x[idx_bs][idx_f][idx_w][idx_h];
 
-        const std::pair<size_t, size_t> center_idx_bounds = 
+        const std::pair<int, int> center_idx_bounds = 
                     compute_center_index_bounds(x_, centers[0], scale, delta_inv, centers.size(0));
 
-        for (auto j = center_idx_bounds.first; j <= center_idx_bounds.second; j++){
+        for (int j = center_idx_bounds.first; j <= center_idx_bounds.second; j++){
             const T x_scaled = (x_ - centers[j]) * scale_inv;
-            if (fabsf(x_scaled) < supp_rad){               
+            if (fabsf(x_scaled) < SUPP_RAD){               
                 
                 // determine support interval
-                int interval = (int)(x_scaled - supp_lower);
-                interval = max(0, min(num_supp_intervals - 1, interval));
+                int interval = static_cast<int>(x_scaled - SUPP_LOWER);
+                interval = max(0, min(NUM_SUPP_INTERVALS - 1, interval));
                 
                 // evaluate local spline
-                T spline_val = quartic_bspline_coeffs[interval][4];
-
+                T spline_val = QUARTIC_BSPLINE_COEFFS[interval][4];
                 #pragma unroll
-                for (auto i = 1; i <= num_supp_intervals - 1; i++){
+                for (int i = 1; i <= NUM_SUPP_INTERVALS - 1; i++){
                     spline_val = spline_val * x_scaled 
-                               + quartic_bspline_coeffs[interval][num_supp_intervals - 1 - i];
+                               + QUARTIC_BSPLINE_COEFFS[interval][NUM_SUPP_INTERVALS - 1 - i];
                 }
 
                 atomicAdd(&grad_w[idx_f][j], grad_out[idx_bs][idx_f][idx_w][idx_h] * spline_val);
@@ -107,9 +106,8 @@ std::vector<torch::Tensor> quartic_bspline_backward_cuda_function(
     const double delta_inv = 1.0 / (centers[1].item<double>() - centers[0].item<double>());
 
     auto scalar_type = x.scalar_type();
-    const size_t shared_mem_size = grad_w.numel() * sizeof(scalar_type);
-    AT_DISPATCH_FLOATING_TYPES(scalar_type, "quartic_bspline_backward", [&] {
-        quartic_bspline_backward_kernel<scalar_t><<<grid_size, block_size, shared_mem_size>>>(
+    AT_DISPATCH_FLOATING_TYPES(scalar_type, "quartic_bspline_backward_cuda", [&] {
+        quartic_bspline_backward_cuda_kernel<scalar_t><<<grid_size, block_size>>>(
             x.packed_accessor32<scalar_t, 4>(),
             weight_tensor.packed_accessor32<scalar_t, 2>(), 
             centers.packed_accessor32<scalar_t, 1>(),

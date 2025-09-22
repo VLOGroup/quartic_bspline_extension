@@ -5,6 +5,13 @@
 - Further optimisation of backward step
     * Shared memory and tiling
 
+## [0.3.0]
+
+### Features
+
+- Introduce CPU-only extension too based on OpenMP next to CUDA extension. If CUDA-device
+    is detected, both CPU and CUDA extensions, are built.
+
 ## [0.2.2]
 
 ### Fixes

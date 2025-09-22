@@ -4,7 +4,7 @@ import os
 from typing import Callable
 import datetime
 
-from bspline_cuda.functions import QuarticBSplineFunction
+from quartic_bspline_extension.functions import QuarticBSplineFunction
 from Timer import Timer
 
 def profile(func: Callable, x: torch.Tensor, chrome_export: bool=False) -> None:
