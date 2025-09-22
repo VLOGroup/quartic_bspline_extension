@@ -22,17 +22,18 @@ maintainers = [
 ]
 description = 'Quartic B-Spline extension: CPU and CUDA extension for quartic bspline based potential functions.'
 readme = 'README.md'
-license = { text = "MIT" }
+license = 'MIT'
 keywords = ['Quartic B-Spline']
 classifiers = [
     'Programming Language :: Python :: 3',
     'Programming Language :: C++'
 ]
+dynamic = ["requires-python"]
 
 [tool.setuptools.packages.find]
 where = ['.']
 exclude = ['tests*', 'docs*', 'artefacts*', 'examples*', 'profiling*']
 
-# [project.urls]
+#[project.urls]
 # Documentation = ''
 # Repository = ''

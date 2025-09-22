@@ -19,3 +19,6 @@ sphinx-autobuild==2025.8.25
 sphinx-rtd-theme==3.0.2
 myst-parser==4.0.1
 breathe==4.36.0                 # to combine doxygen and sphinx
+
+# Publishing on PyPI
+twine==6.2.0
