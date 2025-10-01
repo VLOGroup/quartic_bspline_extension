@@ -34,4 +34,4 @@ where = ['.']
 exclude = ['tests*', 'docs*', 'artefacts*', 'examples*', 'profiling*']
 
 [project.urls]
-Homepage = 
+Homepage = 'https://github.com/VLOGroup/quartic_bspline_extension'
