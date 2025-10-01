@@ -14,8 +14,7 @@ dependencies = [
     'torch>=2.6.0'
 ]
 authors = [
-    {name = 'Florian Thaler', email = 'florian.thaler@tugraz.at'},
-    {name = 'Thomas Pock'}
+    {name = 'Florian Thaler, Thomas Pock', email = 'florian.thaler@tugraz.at'},
 ]
 maintainers = [
     {name = 'Florian Thaler', email = 'florian.thaler@tugraz.at'}
@@ -34,6 +33,5 @@ dynamic = ["requires-python"]
 where = ['.']
 exclude = ['tests*', 'docs*', 'artefacts*', 'examples*', 'profiling*']
 
-#[project.urls]
-# Documentation = ''
-# Repository = ''
+[project.urls]
+Homepage = 
