@@ -7,7 +7,7 @@ $$
 \rho(x, \gamma) = \sum_{\nu = 1}^{N}\gamma_{\nu}M_{4}(\frac{x - t_{\nu}}{s}),
 $$
 
-where $\{t_\nu\}_{\nu=1}^N$ is an equidistant partition of the Interval $I=[a, b]$, 
+where $\lbrace t_\nu\rbrace_{\nu=1}^N$ is an equidistant partition of the Interval $I=[a, b]$, 
 $s>0$ is a scaling parameter and $M_4$ refers to the central quartic midpoint cardinal
 b-spline (see [[1]](#1)).
 
